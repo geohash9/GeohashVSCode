@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$
+
+# Virtual environment
+venv/
+venv*/
+
+# IDE files
+.idea/
+.vscode/
+
+# Logs and databases
+*.log
+*.db
+
+# Environment variables
+.venv
+
+# Compiled Python files
+*.pyc
+
+# Dependencies installed via pip
+# This is optional; you can include it if you prefer not to track dependencies
+# You may need to adjust depending on your setup
+lib/
+lib64/
+bin/
+include/
+share/
+
+# Cache and temp files
+*.cache
+*.swp
+*.tmp
+
+# Any other files/directories you want to ignore

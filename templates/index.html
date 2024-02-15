@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Geohash Lookup</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Add your custom styles here */
+        body {
+            padding: 20px;
+        }
+        #map {
+            margin-top: 20px;
+        }
+        /* Custom geohash code styling */
+        .geohash-code {
+            font-weight: bold;
+        }
+        .geohash-code .blue {
+            color: blue;
+        }
+        .geohash-code .green {
+            color: green;
+        }
+        .geohash-code .red {
+            color: red;
+        }
+        .geohash-code .dark-yellow {
+            color: darkgoldenrod;
+        }
+        /* Styling for the modal content */
+        .modal-content {
+            font-size: 18px;
+        }
+        .nomenclature-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+         <a class="navbar-brand" href="#">IIT KGP Geohashcodes Search</a>
+    </nav>
+    <div class="container">
+        <h1 class="mt-4">Geohashcode Lookup</h1>
+        <form action="/get_location" method="post" class="mt-4">
+            <div class="form-group">
+                <label for="custom_code">Enter Custom Geohash Code:</label>
+                <input type="text" class="form-control" id="custom_code" name="custom_code">
+            </div>
+            <button type="submit" class="btn btn-primary" data-toggle="modal" data-target="#nomenclatureModal">Search</button>
+        </form>
+        <div id="map" style="height: 500px;" class="mt-4"></div>
+    </div>
+    <div class="modal fade" id="nomenclatureModal" tabindex="-1" role="dialog" aria-labelledby="nomenclatureModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="nomenclatureModalLabel">Custom Geohash Code Nomenclature</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Display the user input custom geohash code and split it according to nomenclature -->
+                    <div id="modalPopupcustomCode"></div>
+                    <div class="nomenclature-item">
+                        <strong>Infrastructure-Typology:</strong> <span class="blue" id="infrastructure"></span>
+                    </div>
+                    <div class="nomenclature-item">
+                        <strong>Building Code:</strong> <span class="green" id="building"></span>
+                    </div>
+                    <div class="nomenclature-item">
+                        <strong>Floor Level:</strong> <span class="red" id="floor"></span>
+                    </div>
+                    <div class="nomenclature-item">
+                        <strong>Room Number:</strong> <span class="dark-yellow" id="room"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Add Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        var map = L.map('map').setView([22.32085306316219, 87.3118399754929], 16);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19
+        }).addTo(map);
+
+        function displayLocation(geohashcode, latitude, longitude, locationName, locationDescription) {
+            map.setView([latitude, longitude], 12);
+
+            // Split the user input geohash code into different parts for styling
+            var codeParts = geohashcode.match(/(\w{1})(\w{2})(\w{1})(\w{3})/);
+
+            // Update the modal content with the user input code
+            document.getElementById("infrastructure").innerText = codeParts[1];
+            document.getElementById("building").innerText = codeParts[2];
+            document.getElementById("floor").innerText = codeParts[3];
+            document.getElementById("room").innerText = codeParts[4];
+
+            // Create the styled geohash code
+            var styledGeohash = `
+                <span class="geohash-code">
+                
+                    <span class="blue">${codeParts[1]}</span>
+                    <span class="green">${codeParts[2]}</span>
+                    <span class="red">${codeParts[3]}</span>
+                    <span class="dark-yellow">${codeParts[4]}</span>
+                </span>`;
+
+                document.getElementById("modalPopupcustomCode").innerHTML = styledGeohash;
+
+            // Create the popup content with styled geohash, location name, description, and the "Get Directions" button
+            var popupContent = `
+                <div>${styledGeohash}</div>
+                <div><strong>Location:</strong> ${locationName}</div>
+                <div><strong>Description:</strong> ${locationDescription}</div>
+                <a href="#" class="btn btn-primary-outline" onclick="openGoogleMaps(${latitude}, ${longitude}); return false;">Get Directions</a>
+            `;
+
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup(popupContent)
+                .openPopup();
+        }
+
+        function openGoogleMaps(latitude, longitude) {
+            var googleMapsUrl = `https://www.google.com/maps/dir/Current+Location/${latitude},${longitude}`;
+            window.open(googleMapsUrl, '_blank');
+        }
+
+        document.querySelector('form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            var customCode = document.querySelector('#custom_code').value;
+            fetch('/get_location', {
+                method: 'POST',
+                body: new URLSearchParams({ 'custom_code': customCode }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    displayLocation(customCode, data.latitude, data.longitude, data.locationName, data.locationDescription);
+                }
+            })
+            .catch(error => console.error(error));
+        });
+    </script>
+</body>
+</html>
